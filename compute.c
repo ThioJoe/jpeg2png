@@ -12,6 +12,12 @@
 
 #include "ooura/dct.h"
 
+#if !defined(static_assert) && (defined(__GNUC__) || defined(__clang__)) \
+    && defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L \
+    && __STDC_VERSION__ <= 201710L
+#define static_assert _Static_assert
+#endif
+
 static_assert(FLT_EVAL_METHOD == 0, "to preserve identical output please disable excess precision");
 #ifdef PRAGMA_FP_CONTRACT
 #pragma STDC FP_CONTRACT OFF
