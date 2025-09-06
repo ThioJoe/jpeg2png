@@ -213,22 +213,38 @@ int main(int argc, const char **argv) {
                         if(all_together) {
                                 die("different weights are only possible when using separated components");
                         }
-                } else if(n ==1) {
-                        // ok
+                        // Validate all three weights
+                        for(int i = 0; i < 3; i++) {
+                                if(weights[i] < 0.0f || weights[i] > 10.0f) {
+                                        die("weight values must be between 0.0 and 10.0, got %g", weights[i]);
+                                }
+                        }
+                } else if(n == 1) {
+                        if(weights[0] < 0.0f || weights[0] > 10.0f) {
+                                die("weight value must be between 0.0 and 10.0, got %g", weights[0]);
+                        }
                 } else {
-                        die("invalid weight");
+                        die("invalid weight format - use single value or comma-separated triplet (e.g., '0.3' or '0.3,0.1,0.1')");
                 }
         }
         float pweights[3] = {default_pweight, default_pweight, default_pweight};
         if(gopt_arg(options, 'p', &arg_string)) {
                 int n = sscanf(arg_string, "%f,%f,%f", &pweights[0], &pweights[1], &pweights[2]);
                 if(n == 3) {
-                        // ok
+                        // Validate all three probability weights
+                        for(int i = 0; i < 3; i++) {
+                                if(pweights[i] < 0.0f || pweights[i] > 1.0f) {
+                                        die("probability weight values must be between 0.0 and 1.0, got %g", pweights[i]);
+                                }
+                        }
                 } else if(n == 1) {
+                        if(pweights[0] < 0.0f || pweights[0] > 1.0f) {
+                                die("probability weight value must be between 0.0 and 1.0, got %g", pweights[0]);
+                        }
                         pweights[1] = pweights[0];
                         pweights[2] = pweights[0];
                 } else {
-                        die("invalid probability weight");
+                        die("invalid probability weight format - use single value or comma-separated triplet (e.g., '0.001' or '0.001,0.002,0.001')");
                 }
         }
         unsigned iterations[3] = {default_iterations, default_iterations, default_iterations};
@@ -238,11 +254,20 @@ int main(int argc, const char **argv) {
                         if(all_together) {
                                 die("different iteration counts are only possible when using separated components");
                         }
+                        // Validate all three iteration counts
+                        for(int i = 0; i < 3; i++) {
+                                if(iterations[i] == 0 || iterations[i] > 10000) {
+                                        die("iteration count must be between 1 and 10000, got %u", iterations[i]);
+                                }
+                        }
                 } else if(n == 1) {
+                        if(iterations[0] == 0 || iterations[0] > 10000) {
+                                die("iteration count must be between 1 and 10000, got %u", iterations[0]);
+                        }
                         iterations[1] = iterations[0];
                         iterations[2] = iterations[0];
                 } else {
-                        die("invalid number of iterations");
+                        die("invalid iteration count format - use single value or comma-separated triplet (e.g., '50' or '50,30,30')");
                 }
         }
 
@@ -250,8 +275,11 @@ int main(int argc, const char **argv) {
 #ifdef _OPENMP
                 unsigned threads;
                 int n = sscanf(arg_string, "%u", &threads);
-                if(n != 1 || threads == 0) {
-                        die("invalid number of threads");
+                if(n != 1) {
+                        die("invalid thread count format - must be a positive integer");
+                }
+                if(threads == 0 || threads > 256) {
+                        die("thread count must be between 1 and 256, got %u", threads);
                 }
                 omp_set_num_threads(threads);
 #else
@@ -293,9 +321,10 @@ int main(int argc, const char **argv) {
 
                         unsigned l = strlen(infile);
                         unsigned e = l;
-                        if(l >= 5 && memcmp(".jpeg", &infile[l-5], 5) == 0) {
+                        // Case-insensitive extension detection
+                        if(l >= 5 && (memcmp(".jpeg", &infile[l-5], 5) == 0 || memcmp(".JPEG", &infile[l-5], 5) == 0)) {
                                 e = l-5;
-                        } else if(l >= 4 && memcmp(".jpg", &infile[l-4], 4) == 0) {
+                        } else if(l >= 4 && (memcmp(".jpg", &infile[l-4], 4) == 0 || memcmp(".JPG", &infile[l-4], 4) == 0)) {
                                 e = l-4;
                         }
                         char *outfile = malloc(e + 4 + 1);
